@@ -14,21 +14,13 @@ plt.show()
 
 for _ in range(n_frames):
     for _ in range(n_choices_per_frame):
-        i = np.random.randint(0, grid_size-1)
-        j = np.random.randint(0, grid_size-1)
+        i = np.random.randint(0, grid_size)
+        j = np.random.randint(0, grid_size)
         grid[i, j] += 1
     if not np.any(grid > 4):
         continue
     else:
         while np.any(grid > 4):
-            # choose random index over four
-            idxs = np.where(grid > 4)
-            i_idx = idxs[0]
-            j_idx = idxs[1]
-            rand_idx_idx = np.random.randint(0, i_idx.size)
-            rand_i = i_idx[rand_idx_idx]
-            rand_j = j_idx[rand_idx_idx]
-
             # Topple until stable
             while np.any(grid > 4):
                 unstable = grid > 4
