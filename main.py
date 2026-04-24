@@ -1,36 +1,36 @@
 import numpy as np
 from matplotlib import pyplot as plt
 
-grid_size = 100
-n_frames = 5000
-n_choices_per_frame = n_frames // 1000
+GRID_SIZE = 100
+N_FRAMES = 5000
+N_CHOICES_PER_FRAME = N_FRAMES // 100
+THRESHOLD = 4
+SLOPE_STRENGTH = 0.6  # 0 = flat, <1 = sloped (must be <1 or uphill factor goes negative)
 
-grid = np.array([[np.random.choice([1,2,3,4]) for _ in range(grid_size)] for _ in range(grid_size)]) # multiply grid of ones by a random choice of 1,2,3,4 for all points in the grid (i.e. create noise).
+# grid = (np.exp(-(((np.mgrid[-1:1:GRID_SIZE*1j, -1:1:GRID_SIZE*1j] - np.array([-1, 0])[:, None, None])**2).sum(axis=0) / 0.5)) * THRESHOLD).astype(int)
+grid = np.zeros((GRID_SIZE, GRID_SIZE), dtype=int)
 
 fig, ax = plt.subplots()
 im = ax.imshow(grid, vmin=0, vmax=6, cmap='gray')
 plt.ion()
 plt.show()
 
-for _ in range(n_frames):
-    for _ in range(n_choices_per_frame):
-        i = np.random.randint(0, grid_size)
-        j = np.random.randint(0, grid_size)
-        grid[i, j] += 1
-    if not np.any(grid > 4):
-        continue
-    else:
-        while np.any(grid > 4):
-            # Topple until stable
-            while np.any(grid > 4):
-                unstable = grid > 4
-                grid[unstable] -= 4
+cx, cy = GRID_SIZE // 2, GRID_SIZE // 2 # this is the loc of the peak
 
-                # Shift in all 4 directions, zero-pad boundaries (sand falls off edges)
-                grid[1:, :] += unstable[:-1, :]  # from above
-                grid[:-1, :] += unstable[1:, :]  # from below
-                grid[:, 1:] += unstable[:, :-1]  # from left
-                grid[:, :-1] += unstable[:, 1:]  # from right
+for _ in range(N_FRAMES):
+    # Drop grains at the peak
+    grid[cx, cy] += N_CHOICES_PER_FRAME
+
+    # Topple until stable
+    while np.any(grid > THRESHOLD):
+        unstable = grid > THRESHOLD
+        grid[unstable] -= 4
+
+        grid[1:,  :]  += (unstable[:-1, :] * (1 + SLOPE_STRENGTH)).astype(int)  # downhill
+        grid[:-1, :]  += (unstable[1:,  :] * (1 - SLOPE_STRENGTH)).astype(int)  # uphill
+        grid[:,  1:]  += unstable[:, :-1]  # east
+        grid[:, :-1]  += unstable[:, 1:]   # west
 
     im.set_data(grid)
     fig.canvas.flush_events()
+    plt.pause(0.01)
